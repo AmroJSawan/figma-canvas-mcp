@@ -6,6 +6,42 @@
 
 > **Your Figma canvas, controlled by AI.** A Model Context Protocol (MCP) server that gives AI assistants (Claude, Cursor, Windsurf, and more) full read/write access to Figma — extract design systems, create components, manage variables, build FigJam boards, and debug plugins in real time.
 
+---
+
+## How It Works — In 30 Seconds
+
+You talk to your AI assistant. Your AI assistant talks to Figma. You watch things appear on the canvas.
+
+```
+You  →  "Create a blue button with rounded corners"
+         ↓
+    Claude / Cursor / Windsurf
+         ↓
+    Figma Canvas MCP  (this server)
+         ↓
+    Figma Desktop  →  button appears on your canvas
+```
+
+That's it. No clicking. No drag-and-drop. Just describe what you want.
+
+**What you can do:**
+- *"Show me all the colors in my design system"*
+- *"Create a card component with a shadow and 16px padding"*
+- *"Add 10 sticky notes to my FigJam board — one per sprint item"*
+- *"Compare the Button in Figma against my React component"*
+
+**What you need to make it work — three pieces:**
+
+| # | Piece | What it does |
+|---|-------|-------------|
+| 1 | **This server** | Runs on your computer. Translates between AI and Figma |
+| 2 | **A Figma plugin** | Installed in Figma Desktop. Acts as the hands |
+| 3 | **Your AI assistant** | Claude, Cursor, Windsurf — gives the instructions |
+
+**Setup takes ~10 minutes.** Jump to [Setup](#setup) to get started.
+
+---
+
 **Forked from [figma-console-mcp](https://github.com/southleft/figma-console-mcp)** with a non-overlapping port range (`9243–9252`) and a distinct plugin identity (`Figma Canvas Bridge`), so it runs cleanly **alongside** the original without any conflicts.
 
 ---
