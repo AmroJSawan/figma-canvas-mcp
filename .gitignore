@@ -1,0 +1,61 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output (committed for distribution)
+# dist/ is intentionally tracked
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+.dev.vars
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pino-debug.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Cloudflare Workers
+.wrangler/
+.mf/
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V3-001
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Editor directories
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Test coverage
+coverage/
+*.lcov
+.nyc_output/
+
+# Temporary files
+tmp/
+temp/
