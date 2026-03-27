@@ -4,198 +4,195 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js 18+](https://img.shields.io/badge/Node.js-18%2B-green)](https://nodejs.org)
 
-> **Your Figma canvas, controlled by AI.** A Model Context Protocol (MCP) server that gives AI assistants (Claude, Cursor, Windsurf, and more) full read/write access to Figma — extract design systems, create components, manage variables, build FigJam boards, and debug plugins in real time.
+> **Your Figma canvas, controlled by AI.** An MCP server that gives AI assistants full read/write access to Figma — extract design systems, create components, manage variables, build FigJam boards, and debug plugins in real time.
 
 ---
 
-## How It Works — In 30 Seconds
+## Quick Setup
 
-You talk to your AI assistant. Your AI assistant talks to Figma. You watch things appear on the canvas.
-
-```
-You  →  "Create a blue button with rounded corners"
-         ↓
-    Claude / Cursor / Windsurf
-         ↓
-    Figma Canvas MCP  (this server)
-         ↓
-    Figma Desktop  →  button appears on your canvas
-```
-
-That's it. No clicking. No drag-and-drop. Just describe what you want.
-
-**What you can do:**
-- *"Show me all the colors in my design system"*
-- *"Create a card component with a shadow and 16px padding"*
-- *"Add 10 sticky notes to my FigJam board — one per sprint item"*
-- *"Compare the Button in Figma against my React component"*
-
-**What you need to make it work — three pieces:**
-
-| # | Piece | What it does |
-|---|-------|-------------|
-| 1 | **This server** | Runs on your computer. Translates between AI and Figma |
-| 2 | **A Figma plugin** | Installed in Figma Desktop. Acts as the hands |
-| 3 | **Your AI assistant** | Claude, Cursor, Windsurf — gives the instructions |
-
-**Setup takes ~10 minutes.** Jump to [Setup](#setup) to get started.
+Three steps: get a token → register the server → install the plugin.
 
 ---
 
-**Forked from [figma-console-mcp](https://github.com/southleft/figma-console-mcp)** with a non-overlapping port range (`9243–9252`) and a distinct plugin identity (`Figma Canvas Bridge`), so it runs cleanly **alongside** the original without any conflicts.
+### Step 1 — Get Your Figma Token
+
+Your token lets the server read and write to your Figma files.
+
+1. Open **Figma Desktop** → click your avatar (top-right) → **Settings**
+2. Go to the **Security** tab
+3. Scroll to **Personal access tokens** → click **Generate new token**
+4. Name it `Figma Canvas MCP`, choose an expiry
+5. **Copy the token** — it starts with `figd_` and you won't see it again
+
+---
+
+### Step 2 — Register the MCP Server
+
+Pick the client you use and run the command or edit the config file.
+
+**Claude Code (terminal):**
+```bash
+claude mcp add figma-canvas -s user \
+  -e FIGMA_ACCESS_TOKEN=figd_YOUR_TOKEN_HERE \
+  -e ENABLE_MCP_APPS=true \
+  -- node /path/to/figma-canvas-mcp/dist/local.js
+```
+
+**Claude Desktop** — edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
+```json
+{
+  "mcpServers": {
+    "figma-canvas": {
+      "command": "/usr/local/bin/node",
+      "args": ["/path/to/figma-canvas-mcp/dist/local.js"],
+      "env": {
+        "FIGMA_ACCESS_TOKEN": "figd_YOUR_TOKEN_HERE",
+        "ENABLE_MCP_APPS": "true"
+      }
+    }
+  }
+}
+```
+> Claude Desktop doesn't inherit your shell `$PATH` — use the absolute path to `node`. Find it by running `which node` in your terminal. Common values: `/usr/local/bin/node` or `/opt/homebrew/bin/node`.
+
+**Cursor** — edit `~/.cursor/mcp.json`:
+```json
+{
+  "mcpServers": {
+    "figma-canvas": {
+      "command": "node",
+      "args": ["/path/to/figma-canvas-mcp/dist/local.js"],
+      "env": {
+        "FIGMA_ACCESS_TOKEN": "figd_YOUR_TOKEN_HERE",
+        "ENABLE_MCP_APPS": "true"
+      }
+    }
+  }
+}
+```
+
+**Windsurf** — edit `~/.codeium/windsurf/mcp_config.json`:
+```json
+{
+  "mcpServers": {
+    "figma-canvas": {
+      "command": "node",
+      "args": ["/path/to/figma-canvas-mcp/dist/local.js"],
+      "env": {
+        "FIGMA_ACCESS_TOKEN": "figd_YOUR_TOKEN_HERE",
+        "ENABLE_MCP_APPS": "true"
+      }
+    }
+  }
+}
+```
+
+After saving, **restart your MCP client** to load the server.
+
+---
+
+### Step 3 — Install the Figma Plugin
+
+The plugin is what lets the server actually draw things inside Figma Desktop.
+
+1. Open **Figma Desktop** (the desktop app — not the browser)
+2. Go to **Plugins → Development → Import plugin from manifest...**
+3. Navigate to and select:
+   ```
+   ~/.figma-canvas-mcp/plugin/manifest.json
+   ```
+   > The server automatically copies the plugin files to `~/.figma-canvas-mcp/` the first time it runs. Start the MCP server first if you don't see that folder yet.
+4. Open any Figma file
+5. Go to **Plugins → Development → Figma Canvas Bridge** to run it
+
+---
+
+### Step 4 — Verify It's Working
+
+Ask your AI assistant:
+
+```
+Check the Figma Canvas status
+```
+
+You should see an active WebSocket connection. If the plugin is running in a Figma file, the file name will appear in the response.
+
+---
+
+## What You Can Do
+
+Once connected, just describe what you want:
+
+```
+Show me all the colors and typography in my design system
+```
+```
+Create a notification card with a success icon and a dismiss button,
+using our brand color variables
+```
+```
+Add a sticky note to the FigJam board for each item in this sprint
+```
+```
+Compare the Button component in Figma against src/components/Button.tsx
+```
+```
+Stream the console logs from my plugin while I test the interactions
+```
 
 ---
 
 ## Why This Fork?
 
-If you already run `figma-console-mcp` and want a **second independent MCP+Figma pair** — for a different project, workspace, or AI client — this fork gives you exactly that:
+This is a fork of [figma-console-mcp](https://github.com/southleft/figma-console-mcp) built to run **alongside the original** without any conflicts. If you already use `figma-console-mcp`, this gives you a fully independent second MCP+Figma pair on a separate port range and plugin identity.
 
 | | figma-console-mcp | figma-canvas-mcp |
 |---|---|---|
 | Port range | 9223–9232 | **9243–9252** |
 | Plugin name | Figma Desktop Bridge | **Figma Canvas Bridge** |
 | Plugin ID | figma-desktop-bridge-mcp | **figma-canvas-bridge-mcp** |
-| Stable config dir | `~/.figma-console-mcp/` | **`~/.figma-canvas-mcp/`** |
-| Conflict-free coexistence | — | **Yes** |
+| Config dir | `~/.figma-console-mcp/` | **`~/.figma-canvas-mcp/`** |
+| Runs alongside original | — | **Yes** |
 
-Both can be registered simultaneously in Claude Code, Claude Desktop, Cursor, or any other MCP client. They will never step on each other.
+To run both at the same time:
+
+```bash
+claude mcp add figma-console -s user -e FIGMA_ACCESS_TOKEN=... -- npx -y figma-console-mcp@latest
+claude mcp add figma-canvas  -s user -e FIGMA_ACCESS_TOKEN=... -- node ~/figma-canvas-mcp/dist/local.js
+```
+
+In Figma Desktop, run whichever plugin matches the MCP server you want active in that file.
 
 ---
 
 ## Features
 
 - **84+ tools** spanning the full Figma surface area
-- **Design system extraction** — variables, components, styles, and tokens with CSS/Tailwind export
+- **Design system extraction** — variables, components, and styles with CSS/Tailwind export
 - **AI-assisted design creation** — create frames, components, and layouts via natural language
-- **Variable management** — full CRUD for design tokens, with batch operations (100 variables per call)
+- **Variable management** — full CRUD for design tokens, with batch operations (up to 100 per call)
 - **Real-time console monitoring** — stream plugin logs, errors, and stack traces live
-- **Visual debugging** — capture screenshots and render components as images
+- **Visual debugging** — capture canvas screenshots and render components as images
 - **FigJam boards** — create stickies, flowcharts, tables, and code blocks
-- **Slides support** — manage presentations, transitions, and slide content
+- **Slides** — manage presentations, transitions, and slide content
 - **Design-code parity** — compare Figma specs against your code implementation
 - **Multi-file support** — connect to multiple open Figma files simultaneously
 
 ---
 
-## Prerequisites
-
-- **Node.js 18+** — `node --version` to check ([download](https://nodejs.org))
-- **Figma Desktop** (not the web app — the plugin requires the desktop client)
-- A **Figma Personal Access Token** (see below)
-- An **MCP-compatible client**: Claude Code CLI, Claude Desktop, Cursor, Windsurf, etc.
-
----
-
-## Setup
-
-### Step 1 — Get a Figma Personal Access Token
-
-1. Open Figma → click your avatar → **Settings → Security**
-2. Scroll to **Personal access tokens** → **Generate new token**
-3. Name it `Figma Canvas MCP`, set a reasonable expiry
-4. Copy the token (starts with `figd_`) — you won't see it again
-
-### Step 2 — Register the MCP Server
-
-**Claude Code (CLI) — recommended:**
-```bash
-claude mcp add figma-canvas -s user \
-  -e FIGMA_ACCESS_TOKEN=figd_YOUR_TOKEN_HERE \
-  -e ENABLE_MCP_APPS=true \
-  -- node /Users/YOUR_USERNAME/figma-canvas-mcp/dist/local.js
-```
-
-**Claude Desktop** (`~/Library/Application Support/Claude/claude_desktop_config.json`):
-```json
-{
-  "mcpServers": {
-    "figma-canvas": {
-      "command": "/usr/local/bin/node",
-      "args": ["/Users/YOUR_USERNAME/figma-canvas-mcp/dist/local.js"],
-      "env": {
-        "FIGMA_ACCESS_TOKEN": "figd_YOUR_TOKEN_HERE",
-        "ENABLE_MCP_APPS": "true"
-      }
-    }
-  }
-}
-```
-
-> **Note:** Claude Desktop requires an absolute path to `node` because it does not inherit your shell `$PATH`. Run `which node` in your terminal to find the correct path.
-
-**Cursor** (`~/.cursor/mcp.json`) and **Windsurf** (`~/.codeium/windsurf/mcp_config.json`):
-```json
-{
-  "mcpServers": {
-    "figma-canvas": {
-      "command": "node",
-      "args": ["/Users/YOUR_USERNAME/figma-canvas-mcp/dist/local.js"],
-      "env": {
-        "FIGMA_ACCESS_TOKEN": "figd_YOUR_TOKEN_HERE",
-        "ENABLE_MCP_APPS": "true"
-      }
-    }
-  }
-}
-```
-
-### Step 3 — Install the Desktop Bridge Plugin
-
-1. Open **Figma Desktop**
-2. Go to **Plugins → Development → Import plugin from manifest...**
-3. Select:
-   ```
-   ~/.figma-canvas-mcp/plugin/manifest.json
-   ```
-   > On first run, the server copies the plugin files to `~/.figma-canvas-mcp/` automatically.
-4. Open a Figma file and run **Figma Canvas Bridge** from the Plugins menu
-
-### Step 4 — Restart Your MCP Client
-
-Restart Claude Code, Claude Desktop, Cursor, or Windsurf to load the new server.
-
-### Step 5 — Verify the Connection
-
-Ask your AI assistant:
-```
-Check the Figma Canvas status
-```
-
-You should see the active WebSocket connection on port 9243–9252.
-
----
-
-## Running Alongside figma-console-mcp
-
-This is the primary use case for this fork. Both servers can be active at the same time:
-
-```bash
-# Both registered in Claude Code simultaneously:
-claude mcp add figma-console -s user -e FIGMA_ACCESS_TOKEN=... -- npx -y figma-console-mcp@latest
-claude mcp add figma-canvas  -s user -e FIGMA_ACCESS_TOKEN=... -- node ~/figma-canvas-mcp/dist/local.js
-```
-
-In Figma Desktop, you will have two plugins available:
-- **Figma Desktop Bridge** (ports 9223–9232) — from figma-console-mcp
-- **Figma Canvas Bridge** (ports 9243–9252) — from this fork
-
-Run whichever plugin corresponds to the MCP server you want active in that file.
-
----
-
 ## Tool Reference
 
-The server exposes **84+ tools** organized into categories. Here is a summary of what is available:
+The server exposes **84+ tools** organized by category.
 
 ### Core Reading
 
 | Tool | Description |
 |------|-------------|
 | `figma_get_status` | Check WebSocket connection and list active Figma instances |
-| `figma_get_design_system_kit` | Full design system snapshot — tokens, components, styles, and visual specs in one call |
-| `figma_get_variables` | Extract all design tokens with multi-mode support; exports CSS and Tailwind |
+| `figma_get_design_system_kit` | Full design system snapshot — tokens, components, styles, and specs in one call |
+| `figma_get_variables` | All design tokens with multi-mode support; exports CSS and Tailwind |
 | `figma_get_styles` | Color, text, and effect styles |
-| `figma_get_component` | Component metadata or a full reconstruction spec |
+| `figma_get_component` | Component metadata or full reconstruction spec |
 | `figma_get_file_data` | Entire file tree with configurable verbosity |
 | `figma_get_selection` | Read the user's current Figma selection |
 
@@ -204,13 +201,13 @@ The server exposes **84+ tools** organized into categories. Here is a summary of
 | Tool | Description |
 |------|-------------|
 | `figma_execute` | Run any Figma Plugin API code — create frames, shapes, text, components, and more |
-| `figma_instantiate_component` | Create a component instance with specific properties and variant values |
-| `figma_set_fills` | Apply solid colors or bind design token variables to fills |
+| `figma_instantiate_component` | Place a component instance with specific property and variant values |
+| `figma_set_fills` | Apply colors or bind design token variables to fills |
 | `figma_set_text` | Update text content on any text node |
 | `figma_move_node` / `figma_resize_node` | Reposition and resize nodes |
 | `figma_clone_node` | Duplicate any node |
-| `figma_delete_node` | Remove nodes |
-| `figma_arrange_component_set` | Organize variants into professional grid layouts |
+| `figma_delete_node` | Remove a node |
+| `figma_arrange_component_set` | Organize variants into a professional grid layout |
 
 ### Variable (Token) Management
 
@@ -219,7 +216,7 @@ The server exposes **84+ tools** organized into categories. Here is a summary of
 | `figma_setup_design_tokens` | Create a complete token system (collection + modes + variables) atomically |
 | `figma_batch_create_variables` | Create up to 100 variables in a single call |
 | `figma_batch_update_variables` | Update up to 100 variable values in a single call |
-| `figma_create_variable_collection` | Create a new token collection with named modes |
+| `figma_create_variable_collection` | Create a token collection with named modes |
 | `figma_create_variable` | Create a COLOR, FLOAT, STRING, or BOOLEAN variable |
 | `figma_update_variable` | Update a variable's value in a specific mode |
 | `figma_rename_variable` / `figma_delete_variable` | Rename or remove variables |
@@ -239,7 +236,7 @@ The server exposes **84+ tools** organized into categories. Here is a summary of
 
 | Tool | Description |
 |------|-------------|
-| `figma_take_screenshot` | Capture the Figma canvas as PNG, JPG, SVG, or PDF |
+| `figma_take_screenshot` | Capture the canvas as PNG, JPG, SVG, or PDF |
 | `figma_get_component_image` | Render a specific component as an image |
 
 ### FigJam Boards
@@ -251,17 +248,17 @@ The server exposes **84+ tools** organized into categories. Here is a summary of
 | `figjam_create_shape_with_text` | Flowchart shapes (diamond, ellipse, rectangle, etc.) |
 | `figjam_create_table` | Create tables with cell data |
 | `figjam_create_code_block` | Add syntax-highlighted code snippets |
-| `figjam_auto_arrange` | Arrange nodes in grid, horizontal, or vertical layouts |
+| `figjam_auto_arrange` | Arrange nodes in grid, horizontal, or vertical layout |
 | `figjam_get_board_contents` | Read all content from a FigJam board |
 
-### Slides Presentations
+### Slides
 
 | Tool | Description |
 |------|-------------|
-| `figma_list_slides` / `figma_get_slide_content` | List or read slides |
+| `figma_list_slides` / `figma_get_slide_content` | List or inspect slides |
 | `figma_create_slide` / `figma_delete_slide` / `figma_duplicate_slide` | Manage slides |
 | `figma_set_slide_transition` | Set transition effects (22 styles, 8 easing curves) |
-| `figma_add_text_to_slide` / `figma_add_shape_to_slide` | Add content to slides |
+| `figma_add_text_to_slide` / `figma_add_shape_to_slide` | Add content to a slide |
 | `figma_reorder_slides` | Rearrange slides via a 2D grid |
 | `figma_focus_slide` | Navigate to a specific slide |
 
@@ -270,15 +267,15 @@ The server exposes **84+ tools** organized into categories. Here is a summary of
 | Tool | Description |
 |------|-------------|
 | `figma_check_design_parity` | Compare Figma specs to your code and produce a scored diff |
-| `figma_generate_component_doc` | Generate markdown documentation merging design and code data |
-| `figma_lint_design` | Accessibility and design quality checks (WCAG, hardcoded values, naming) |
+| `figma_generate_component_doc` | Generate markdown docs merging design and code data |
+| `figma_lint_design` | Accessibility and quality checks (WCAG, hardcoded values, naming) |
 
 ### Comments
 
 | Tool | Description |
 |------|-------------|
 | `figma_get_comments` | Retrieve all comments on a file |
-| `figma_post_comment` | Post a comment, optionally pinned to a node |
+| `figma_post_comment` | Post a comment, optionally pinned to a specific node |
 | `figma_delete_comment` | Delete a comment |
 
 ---
@@ -287,75 +284,43 @@ The server exposes **84+ tools** organized into categories. Here is a summary of
 
 | Environment Variable | Description | Default |
 |---|---|---|
-| `FIGMA_ACCESS_TOKEN` | Figma Personal Access Token (required) | — |
-| `ENABLE_MCP_APPS` | Enable interactive Token Browser and Design System Dashboard | `false` |
+| `FIGMA_ACCESS_TOKEN` | Figma Personal Access Token — required | — |
+| `ENABLE_MCP_APPS` | Enable Token Browser and Design System Dashboard | `false` |
 | `FIGMA_WS_PORT` | Override the starting WebSocket port | `9243` |
-| `FIGMA_WS_HOST` | Bind address for the WebSocket server | `localhost` |
+| `FIGMA_WS_HOST` | WebSocket bind address | `localhost` |
 
-### MCP Apps (optional)
+### MCP Apps
 
 Set `ENABLE_MCP_APPS=true` to unlock two interactive tools:
 
-- **Token Browser** — Explore your design tokens with search, filtering, mode switching, and alias resolution
-- **Design System Dashboard** — A health audit scorecard across six categories: Naming, Tokens, Components, Accessibility, Consistency, and Coverage
+- **Token Browser** — explore design tokens with search, filtering, mode switching, and alias resolution
+- **Design System Dashboard** — health audit scorecard across six categories: Naming, Tokens, Components, Accessibility, Consistency, and Coverage
 
 ---
 
-## Example Prompts
-
-Once everything is connected, try these in your AI assistant:
-
-```
-Extract all design tokens from figma.com/design/abc123/My-App as Tailwind config
-```
-
-```
-Create a notification card with a success icon, title "Changes saved",
-and a dismiss button — use our brand color variables for fills
-```
-
-```
-Search for the "Button" component and create a Large / Primary instance at x=100, y=200
-```
-
-```
-Create a retrospective FigJam board with three columns: Went Well, To Improve, Action Items
-```
-
-```
-Compare the spacing and typography of the Card component in Figma
-against our React implementation in src/components/Card.tsx
-```
-
-```
-Stream console logs from my plugin while I click through the interactions
-```
-
----
-
-## Architecture
+## How It Works
 
 ```
 AI Client (Claude, Cursor, Windsurf)
     │
-    ▼ MCP stdio transport
-MCP Server (dist/local.js)
+    ▼  MCP stdio transport
+MCP Server  (dist/local.js)
     │
-    ▼ WebSocket (ports 9243–9252)
-Figma Canvas Bridge Plugin (ui.html)
+    ▼  WebSocket — ports 9243–9252
+Figma Canvas Bridge Plugin  (plugin UI)
     │
-    ▼ postMessage
-Plugin Worker (code.js)
+    ▼  postMessage
+Plugin Worker  (plugin sandbox)
     │
-    ▼ Figma Plugin API
+    ▼  Figma Plugin API
 Figma Desktop
 ```
 
-**REST API calls** (read-only) go directly from the MCP server to `api.figma.com` using your Personal Access Token.
+**Read operations** (extract variables, components, styles) go directly from the MCP server to `api.figma.com` using your Personal Access Token — no plugin needed.
 
-**Write operations** (create nodes, set variables, execute Plugin API code) are relayed through the WebSocket bridge to the plugin, which runs them inside the Figma Desktop sandbox.
+**Write operations** (create nodes, bind variables, run Plugin API code) are relayed through the WebSocket bridge to the plugin, which executes them inside the Figma Desktop sandbox.
 
-**Multi-file support:** the server can maintain WebSocket connections to multiple open Figma files simultaneously. Use `figma_get_status` to see which files are connected and `figma_list_open_files` to enumerate them.
+**Multi-file:** the server maintains WebSocket connections to all open Figma files simultaneously. Use `figma_get_status` to see which files are connected, `figma_list_open_files` to enumerate them.
 
 ---
 
@@ -371,8 +336,8 @@ npm run build
 # Build just the local server
 npm run build:local
 
-# Run in dev mode (requires wrangler)
-npm run dev:local
+# Watch mode for MCP apps
+npm run dev:apps
 
 # Type check
 npm run type-check
@@ -385,49 +350,52 @@ npm run format
 npm run lint:fix
 ```
 
-The source lives in `src/`. The compiled output in `dist/` is committed and is what the server runs from — no build step required for users.
+The source lives in `src/`. The compiled output in `dist/` is committed — no build step required to use the server.
 
 ---
 
 ## Key Differences from Upstream
 
-This fork makes the following targeted changes relative to [figma-console-mcp](https://github.com/southleft/figma-console-mcp):
+Targeted changes made relative to [figma-console-mcp](https://github.com/southleft/figma-console-mcp):
 
 | File | Change |
 |---|---|
 | `plugin/manifest.json` | Name → "Figma Canvas Bridge", ID → `figma-canvas-bridge-mcp`, ports 9243–9252 |
 | `dist/core/port-discovery.js` | `DEFAULT_WS_PORT=9243`, `PORT_FILE_PREFIX='figma-canvas-mcp-'` |
-| `dist/local.js` | Stable config dir → `.figma-canvas-mcp`, user-facing strings → "Canvas Bridge" |
+| `dist/local.js` | Config dir → `.figma-canvas-mcp`, user-facing strings → "Canvas Bridge" |
 | `dist/core/websocket-server.js` | Port range 9243–9252, `import.meta.url`-relative path for `ui-full.html` |
-| `plugin/ui.html` + `ui-full.html` | `WS_PORT_RANGE_START=9243`, `WS_PORT_RANGE_END=9252` |
+| `plugin/ui.html` + `plugin/ui-full.html` | `WS_PORT_RANGE_START=9243`, `WS_PORT_RANGE_END=9252` |
 
-The ESM `__dirname` fix in `websocket-server.js` is also included upstream — if you hit `ERR_MODULE_NOT_FOUND` for `ui-full.html`, this is the fix.
+> The `websocket-server.js` fix resolves an ESM `__dirname` issue where `ui-full.html` couldn't be found when the server was launched outside its own directory. If you hit `ERR_MODULE_NOT_FOUND` for `ui-full.html` in the upstream package, this is the fix.
 
 ---
 
 ## Troubleshooting
 
-**Plugin is not connecting**
-- Confirm you imported the plugin from `~/.figma-canvas-mcp/plugin/manifest.json`, not from the `plugin/` directory in this repo
-- Make sure the MCP server is running before you open Figma — the plugin connects on load
-- Check `figma_get_status` in your AI client to see the live connection state
+**The plugin is not connecting**
+- Start the MCP server first, then open Figma. The plugin connects on load.
+- Make sure you imported from `~/.figma-canvas-mcp/plugin/manifest.json`, not from the `plugin/` folder in this repo.
+- Run `figma_get_status` in your AI client to see the live connection state.
 
-**Port conflict with figma-console-mcp**
-- This fork uses ports 9243–9252 exclusively; there should be no conflict with the upstream 9223–9232 range
-- If another process occupies 9243, the server automatically tries 9244–9252
+**Port conflict**
+- This fork uses ports 9243–9252 exclusively — no overlap with the upstream 9223–9232 range.
+- If another process occupies 9243, the server automatically tries 9244 through 9252.
 
-**Claude Desktop cannot find `node`**
-- Claude Desktop does not inherit your shell `$PATH`; use the absolute path: `which node`
-- Common locations: `/usr/local/bin/node`, `/opt/homebrew/bin/node`
+**Claude Desktop can't find `node`**
+- Claude Desktop does not inherit your shell `$PATH`. Use the absolute path returned by `which node`.
+- Common locations: `/usr/local/bin/node`, `/opt/homebrew/bin/node`.
 
 **`ENABLE_MCP_APPS` has no effect**
-- Restart your MCP client after changing environment variables — they are read once at startup
+- Environment variables are read once at startup. Restart your MCP client after any change.
+
+**`~/.figma-canvas-mcp/` folder doesn't exist**
+- The server creates it on first run. Start the MCP server, then check the folder.
 
 ---
 
 ## Credits
 
-Built on top of the excellent [figma-console-mcp](https://github.com/southleft/figma-console-mcp) by [Southleft](https://github.com/southleft). All original functionality and architecture are theirs — this fork only adds port isolation for parallel use.
+Built on top of [figma-console-mcp](https://github.com/southleft/figma-console-mcp) by [Southleft](https://github.com/southleft). All core functionality and architecture are theirs — this fork adds port and identity isolation for parallel use.
 
 ---
 
